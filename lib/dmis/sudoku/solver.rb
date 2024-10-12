@@ -21,42 +21,38 @@ module Sudoku
       @multi             = multi
       @progress_callback = progress_callback
       @slow              = guess_throttle
-      @style             = style || "default"
+      @style             = style || "row_wise"
+      @unsolved_xys      = only_xys || Guesses.find_unsolved_xys(board, style: @style)
 
-      @unsolved_xys = only_xys || Guesses.find_unsolved_xys(board, style: @style)
-      return true if unsolved_xys.empty?
+      return [board] if unsolved_xys.empty?
       assert_unsolved if only_xys
       @guesses = unsolved_xys.map { |(x, y)| Guesses.new(x, y, board) }
       @progress_info = ProgressInfo.new(self, throttle: progress_throttle.to_f)
-
       guesses[0].valids.slice!(1..-1) if ! multi
-      last_guess_value = guesses[0].valids[0]
+
+      main_loop
+    end
+
+    def main_loop
+      first_guess = guesses[0].valids[0]
       solved_boards = []
       loop do
         progress_info.add_iter
-        solved = main_loop
+        solved = inner_loop
         progress_info.disabled? or show_progress
 
         solved_boards << board.copy if solved
 
         guesses[0].rotate
-        break if guesses[0].valids[0] == last_guess_value # Rotated back to beginning
+        break if guesses[0].valids[0] == first_guess # Rotated back to beginning
 
-        guesses.each do |guess|
-          guess.reset
-          board[guess.x, guess.y] = 0
-        end
+        reset_board_unsolved
         progress_info.reset_for_loop
       end
       solved_boards
     end
 
-    def max_tries_estimate
-      factor = [(guesses.size.to_f - 54) / 446 * 4 + 1, 1.0].max
-      (1e+9 * factor).round
-    end
-
-    def main_loop
+    def inner_loop
       guesses       = @guesses # Local var is faster
       max_guess_idx = guesses.size - 1
       cur_guess_idx = 0
@@ -87,7 +83,7 @@ module Sudoku
           end
 
           break if progress_info.tries_iter >= max_tries # Give up!
-          slow and sleep(slow)
+          sleep(slow) if slow
         end
         final_check
       end
@@ -101,6 +97,18 @@ module Sudoku
           $stderr.puts "\nError: No solution found for #{unsolved_xys.size} initial unsolved cells."
         end
       end
+    end
+
+    def reset_board_unsolved
+      guesses.each do |guess|
+        guess.reset
+        board[guess.x, guess.y] = 0
+      end
+    end
+
+    def max_tries_estimate
+      factor = [(guesses.size.to_f - 54) / 446 * 4 + 1, 1.0].max
+      (1e+9 * factor).round
     end
 
     def assert_unsolved

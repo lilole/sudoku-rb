@@ -14,10 +14,10 @@
 
 [['zeitwerk', '~> 2.0']].each do |args|
   begin
-    gem(*args); require(args[2] || args[0]) if args[2] != false
+    gem(*args[0..1])
+    require(args[2] || args[0]) if args[2] != false
   rescue Exception => e
-    ver = args[1] ? " -v '#{args[1]}'" : ""
-    puts "#{e.class}: #{e.message}:\n\nPlease run: gem install #{args[0]}#{ver}"
+    puts "#{e.class}: #{e.message}:\n\nPlease run: gem install #{args[0]} -v '#{args[1]}'"
     exit 1
   end
 end
