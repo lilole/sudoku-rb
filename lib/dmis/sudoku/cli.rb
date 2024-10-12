@@ -21,7 +21,7 @@ module Sudoku
         #{msg || "Online help."}
 
         Description:
-          Create a random Sudoku puzzle of any size.
+          Create random Sudoku puzzles of any size.
 
         Usage:
           #{prog} [-a|--all] [-h|-?|--help] [-S|--slow MILLISECS] \\
@@ -64,6 +64,7 @@ module Sudoku
           bsz=5 solve_style=col_wise_reverse board_srand=671801876774 tries_all=63830460
           bsz=5 solve_style=row_wise         board_srand=473238364308 tries_all=376975130
           bsz=5 solve_style=col_wise         board_srand=473238364308 tries_all=1217488955
+          bsz=5 solve_style=col_wise_reverse board_srand=933262306056 tries_all=2515027231
 
       END
       exit(exit_code) if exit_code
