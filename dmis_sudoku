@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+[['zeitwerk', '~> 2.0']].each do |args|
+  begin
+    gem(*args); require(args[2] || args[0]) if args[2] != false
+  rescue Exception => e
+    ver = args[1] ? " -v '#{args[1]}'" : ""
+    puts "#{e.class}: #{e.message}:\n\nPlease run: gem install #{args[0]}#{ver}"
+    exit 1
+  end
+end
+
+Zeitwerk::Loader.new.tap do |loader|
+  $EXE_DIR = __dir__
+  loader.push_dir(File.join($EXE_DIR, "lib"))
+  loader.setup
+end
+
+if File.expand_path($0) == File.expand_path(__FILE__)
+  exit(Dmis::Sudoku::Cli.new(ARGV).run)
+end
