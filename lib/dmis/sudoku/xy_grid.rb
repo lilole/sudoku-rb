@@ -13,56 +13,48 @@
 
 module Dmis
 module Sudoku
+  # Basic management of a 2-D grid of values, with extra logic for extra speed
+  # when checking rows or columns for a specific value.
+
+  # This design avoids caches by keeping both a column-wise and a row-wise copy
+  # of the grid. While this doubles memory, it avoids all possible calculation
+  # when accessing entire rows or columns.
+  #
   module XyGrid
     include Enumerable
 
     def init_grid(width, height, init_value=nil)
       @grid_w, @grid_h, @grid_init_value = width, height, init_value
-      @row_cache = ValidCache.new
-      @grid = new_grid(width, height, init_value)
+      new_grid(width, height)
     end
 
-    def new_grid(width, height, init_value) = Array.new(width) { Array.new(height, init_value) }
+    def new_grid(width, height)
+      @grid_cols = Array.new(width) { Array.new(height, @grid_init_value) }
+      @grid_rows = Array.new(height) { Array.new(width, @grid_init_value) }
+    end
 
-    def copy_grid(target_object) = @grid.each.with_index { |col, x| target_object.set_column(x, col) }
+    def copy_grid(target_grid)
+      @grid_rows.each.with_index { |row, y| target_grid.set_row(y, row) }
+    end
 
     def each(&block)
       if ! block
         block = ->(x, y, v) { [x, y, v] }
         return to_enum(:each, &block)
       end
-      @grid.each.with_index do |col, x|
-        col.each.with_index do |v, y|
+      @grid_rows.each.with_index do |row, y|
+        row.each.with_index do |v, x|
           block.call(x, y, v)
         end
       end
     end
 
     def [](x, y)
-      @grid[x][y]
+      @grid_cols[x][y]
     end
 
     def []=(x, y, value)
-      @row_cache.invalidate(y)
-      @grid[x][y] = value
-    end
-
-    def values(x, y, w, h)
-      new_grid(w, h, nil).tap do |result|
-        xo = x; yo = y
-        for_cells(x, y, w, h) { |x, y, v| result[x - xo][y - yo] = v }
-      end
-    end
-
-    def set_columns(x, y, w, h, columns)
-      raise "Invalid column count: Must be #{w}: Found #{columns.size}" if columns.size != w
-      raise "Invalid column size: All columns must be #{h} values" if columns.any? { |col| col.size != h }
-      xo = x; yo = y
-      for_cells(xo, yo, w, h) do |x, y, _v|
-        self[x, y] = columns[x - xo][y - yo]
-        @row_cache.invalidate(y) if x == xo
-      end
-      self
+      @grid_cols[x][y] = @grid_rows[y][x] = value
     end
 
     def set_value(x, y, value)
@@ -73,27 +65,18 @@ module Sudoku
     def set_row(y, values)
       raise "Invalid row size #{values.size}: Must be #{@grid_w}" if values.size != @grid_w
       (0...@grid_w).each { |x| self[x, y] = values[x] }
-      @row_cache.invalidate(y)
       self
     end
 
     def set_column(x, values)
       raise "Invalid column size #{values.size}: Must be #{@grid_h}" if values.size != @grid_h
-      (0...@grid_h).each { |y| self[x, y] = values[y]; @row_cache.invalidate(y) }
+      (0...@grid_h).each { |y| self[x, y] = values[y] }
       self
     end
 
-    def column(x)
-      @grid[x]
-    end
+    def column(x) = @grid_cols[x]
 
-    def row(y)
-      if @row_cache.key?(y)
-        @row_cache.fetch(y)
-      else
-        @row_cache.set(y) { (0...@grid_w).map { |x| self[x, y] } }
-      end
-    end
+    def row(y) = @grid_rows[y]
 
     def for_cells(x, y, w, h, &block)
       if ! block

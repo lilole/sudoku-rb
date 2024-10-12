@@ -62,22 +62,22 @@ module Sudoku
       r = row(y)
       prev, r[x] = r[x], 0 if slow
       invalid = r.member?(value)
-      r[x] = prev if slow
+      r[x] = prev if slow && invalid # MUST repeat below if not returning
       return false if invalid
 
-      prev, @grid[x][y] = @grid[x][y], 0 if slow # Bypass XyGrid caches
-      valid = catch(:valid_guess?) do
-        check_proc = valid_check_block_proc_for(value)
-        for_cells(*block_origin(x, y), block_size, block_size, &check_proc)
-        true
+      bx, by = block_origin(x, y)
+      invalid = catch(:invalid) do
+        block_size.times do |yi|
+          br = row(by + yi)
+          block_size.times do |xi|
+            throw(:invalid, true) if br[bx + xi] == value
+          end
+        end
+        false
       end
-      @grid[x][y] = prev if slow
-      valid
-    end
 
-    def valid_check_block_proc_for(check_val)
-      cache = (@valid_check_block_proc_for ||= {})
-      cache[check_val] ||= ->(_x, _y, v) { throw(:valid_guess?, false) if v == check_val }
+      r[x] = prev if slow # Reset now for delayed line above
+      ! invalid
     end
 
     def valids(x, y)
