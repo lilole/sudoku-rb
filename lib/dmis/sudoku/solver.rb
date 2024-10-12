@@ -90,7 +90,7 @@ module Sudoku
     end
 
     def final_check
-      unsolved_xys.all? { |(x, y)| board.valid?(x, y) }.tap do |all_valid|
+      board.all? { |x, y, _v| board.valid?(x, y) }.tap do |all_valid|
         if all_valid
           $stderr.puts "\nSuccess: Solved all #{unsolved_xys.size} initial unsolved cells."
         else
