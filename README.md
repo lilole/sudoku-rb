@@ -145,6 +145,6 @@ Sample params:
 
 ## Contributing
 
-Of course, if you like. If you have some ideas, just click the [Issues](issues) tab above and we'll go from there.
+Of course, if you like. If you have some ideas, just click the [Issues](https://github.com/lilole/sudoku-rb/issues) tab above and we'll go from there.
 
 Cheers.
