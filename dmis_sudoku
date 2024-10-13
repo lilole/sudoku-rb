@@ -28,6 +28,4 @@ Zeitwerk::Loader.new.tap do |loader|
   loader.setup
 end
 
-if File.expand_path($0) == File.expand_path(__FILE__)
-  exit(Dmis::Sudoku::Cli.new(ARGV).run)
-end
+exit(Dmis::Sudoku::Cli.new(ARGV).run) if $0 == __FILE__
